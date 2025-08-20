@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/news/news_screen.dart';
 import '../../features/items/items_screen.dart';
 import '../../features/items/add_item_screen.dart';
 import '../../features/items/item_detail_screen.dart';
@@ -14,6 +15,7 @@ import '../app.dart';
 
 class AppRoutes {
   static const String home = '/';
+  static const String news = '/news';
   static const String items = '/items';
   static const String addItem = '/add-item';
   static String itemDetail(String id) => '/item/$id';
@@ -83,9 +85,9 @@ class AppRoutes {
             ),
           ),
           GoRoute(
-            path: items,
+            path: news,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ItemsScreen(),
+              child: NewsScreen(),
             ),
           ),
           GoRoute(

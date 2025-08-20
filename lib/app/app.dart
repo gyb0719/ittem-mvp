@@ -45,7 +45,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
         context.go(AppRoutes.home);
         break;
       case 1:
-        context.go(AppRoutes.items);
+        context.go('/news');
         break;
       case 2:
         context.go(AppRoutes.chat);
@@ -91,9 +91,9 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
             label: '홈',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_outlined),
-            activeIcon: Icon(Icons.shopping_bag),
-            label: '대여목록',
+            icon: Icon(Icons.newspaper_outlined),
+            activeIcon: Icon(Icons.newspaper),
+            label: '동네소식',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline),
