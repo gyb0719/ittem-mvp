@@ -16,32 +16,17 @@ class _MapScreenState extends State<MapScreen> {
     zoom: 14.0,
   );
 
-  final Set<Marker> _markers = {
-    const Marker(
-      markerId: MarkerId('item1'),
-      position: LatLng(37.4979, 127.0276),
-      infoWindow: InfoWindow(
-        title: '캐논 DSLR 카메라',
-        snippet: '15,000원/일',
-      ),
-    ),
-    const Marker(
-      markerId: MarkerId('item2'),
-      position: LatLng(37.5010, 127.0260),
-      infoWindow: InfoWindow(
-        title: '캠핑 텐트',
-        snippet: '25,000원/일',
-      ),
-    ),
-    const Marker(
-      markerId: MarkerId('item3'),
-      position: LatLng(37.4950, 127.0300),
-      infoWindow: InfoWindow(
-        title: '전동 드릴',
-        snippet: '8,000원/일',
-      ),
-    ),
-  };
+  // 실제 앱에서는 마커들이 사용됨 (현재는 지도 대신 플레이스홀더 표시)
+  // final Set<Marker> _markers = {
+  //   const Marker(
+  //     markerId: MarkerId('item1'),
+  //     position: LatLng(37.4979, 127.0276),
+  //     infoWindow: InfoWindow(
+  //       title: '캐논 DSLR 카메라',
+  //       snippet: '15,000원/일',
+  //     ),
+  //   ),
+  // };
 
   @override
   Widget build(BuildContext context) {

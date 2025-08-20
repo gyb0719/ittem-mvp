@@ -1,10 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../shared/services/auth_service.dart';
+import '../../app/routes/app_routes.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    
+    // 로그인하지 않은 경우
+    if (authState is! AuthStateAuthenticated) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('프로필'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.person_outline,
+                  size: 80,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Ittem에 로그인하세요',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '로그인하면 더 많은 기능을 이용할 수 있어요',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => context.go(AppRoutes.login),
+                    child: const Text('로그인'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => context.go(AppRoutes.signup),
+                    child: const Text('회원가입'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 로그인한 경우
+    final user = authState.user;
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('프로필'),
@@ -31,12 +93,12 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '김사용자',
+                        user.name,
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '강남구 역삼동',
+                        user.location,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey,
                         ),
@@ -45,8 +107,8 @@ class ProfileScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _buildStatItem(context, '신뢰도', '4.8'),
-                          _buildStatItem(context, '거래횟수', '23'),
+                          _buildStatItem(context, '신뢰도', user.rating.toString()),
+                          _buildStatItem(context, '거래횟수', user.transactionCount.toString()),
                           _buildStatItem(context, '대여중', '3'),
                         ],
                       ),
@@ -147,7 +209,9 @@ class ProfileScreen extends StatelessWidget {
                       Icons.logout,
                       '로그아웃',
                       '',
-                      () {},
+                      () {
+                        _showLogoutDialog(context, ref);
+                      },
                       isDestructive: true,
                     ),
                   ],
@@ -208,6 +272,32 @@ class ProfileScreen extends StatelessWidget {
       subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그아웃'),
+        content: const Text('정말 로그아웃하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(authStateProvider.notifier).signOut();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('로그아웃'),
+          ),
+        ],
+      ),
     );
   }
 }

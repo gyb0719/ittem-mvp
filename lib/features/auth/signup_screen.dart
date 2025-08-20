@@ -1,0 +1,535 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../shared/services/auth_service.dart';
+
+class SignUpScreen extends ConsumerStatefulWidget {
+  const SignUpScreen({super.key});
+
+  @override
+  ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends ConsumerState<SignUpScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _pageController = PageController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _locationController = TextEditingController();
+  
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  bool _agreeToTerms = false;
+  bool _agreeToPrivacy = false;
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _nameController.dispose();
+    _phoneController.dispose();
+    _locationController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    
+    ref.listen<AuthState>(authStateProvider, (previous, next) {
+      if (next is AuthStateAuthenticated) {
+        context.go('/');
+      } else if (next is AuthStateError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    });
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('회원가입 ${_currentPage + 1}/3'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            // 진행률 표시
+            LinearProgressIndicator(
+              value: (_currentPage + 1) / 3,
+              backgroundColor: Colors.grey[200],
+            ),
+            
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                children: [
+                  _buildAccountInfoStep(),
+                  _buildPersonalInfoStep(),
+                  _buildTermsStep(),
+                ],
+              ),
+            ),
+            
+            // 하단 버튼
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                children: [
+                  if (_currentPage > 0)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          _pageController.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        child: const Text('이전'),
+                      ),
+                    ),
+                  
+                  if (_currentPage > 0) const SizedBox(width: 16),
+                  
+                  Expanded(
+                    flex: _currentPage == 0 ? 1 : 2,
+                    child: ElevatedButton(
+                      onPressed: authState is AuthStateLoading ? null : _handleNext,
+                      child: authState is AuthStateLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(_currentPage == 2 ? '회원가입 완료' : '다음'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountInfoStep() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '계정 정보를 입력해주세요',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Ittem에서 사용할 이메일과 비밀번호를 설정해주세요.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[600],
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+          
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              labelText: '이메일',
+              hintText: 'example@email.com',
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '이메일을 입력해주세요';
+              }
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return '올바른 이메일 형식을 입력해주세요';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          
+          TextFormField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            decoration: InputDecoration(
+              labelText: '비밀번호',
+              hintText: '8자 이상, 영문+숫자 조합',
+              prefixIcon: const Icon(Icons.lock_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword 
+                      ? Icons.visibility_outlined 
+                      : Icons.visibility_off_outlined,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '비밀번호를 입력해주세요';
+              }
+              if (value.length < 8) {
+                return '비밀번호는 8자 이상이어야 합니다';
+              }
+              if (!RegExp(r'^(?=.*[A-Za-z])(?=.*\d)').hasMatch(value)) {
+                return '영문과 숫자를 포함해야 합니다';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          
+          TextFormField(
+            controller: _confirmPasswordController,
+            obscureText: _obscureConfirmPassword,
+            decoration: InputDecoration(
+              labelText: '비밀번호 확인',
+              hintText: '비밀번호를 다시 입력해주세요',
+              prefixIcon: const Icon(Icons.lock_outlined),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureConfirmPassword 
+                      ? Icons.visibility_outlined 
+                      : Icons.visibility_off_outlined,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                  });
+                },
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '비밀번호 확인을 입력해주세요';
+              }
+              if (value != _passwordController.text) {
+                return '비밀번호가 일치하지 않습니다';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoStep() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '개인 정보를 입력해주세요',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '서비스 이용을 위한 기본 정보를 입력해주세요.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[600],
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+          
+          TextFormField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: '이름',
+              hintText: '실명을 입력해주세요',
+              prefixIcon: Icon(Icons.person_outlined),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '이름을 입력해주세요';
+              }
+              if (value.length < 2) {
+                return '이름은 2자 이상이어야 합니다';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          
+          TextFormField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: '휴대폰 번호 (선택)',
+              hintText: '010-1234-5678',
+              prefixIcon: Icon(Icons.phone_outlined),
+            ),
+            validator: (value) {
+              if (value != null && value.isNotEmpty) {
+                if (!RegExp(r'^010-\d{4}-\d{4}$').hasMatch(value)) {
+                  return '올바른 휴대폰 번호 형식을 입력해주세요 (010-1234-5678)';
+                }
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          
+          TextFormField(
+            controller: _locationController,
+            decoration: const InputDecoration(
+              labelText: '거주 지역',
+              hintText: '예: 강남구 역삼동',
+              prefixIcon: Icon(Icons.location_on_outlined),
+              suffixIcon: Icon(Icons.search),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '거주 지역을 입력해주세요';
+              }
+              return null;
+            },
+            onTap: () {
+              _showLocationPicker();
+            },
+            readOnly: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTermsStep() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '약관에 동의해주세요',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Ittem 서비스 이용을 위한 약관에 동의해주세요.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[600],
+            ),
+          ),
+          
+          const SizedBox(height: 32),
+          
+          CheckboxListTile(
+            value: _agreeToTerms,
+            onChanged: (value) {
+              setState(() {
+                _agreeToTerms = value ?? false;
+              });
+            },
+            title: const Text('서비스 이용약관 동의'),
+            subtitle: const Text('(필수)'),
+            secondary: IconButton(
+              icon: const Icon(Icons.article_outlined),
+              onPressed: () {
+                _showTermsDialog('서비스 이용약관');
+              },
+            ),
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
+          
+          CheckboxListTile(
+            value: _agreeToPrivacy,
+            onChanged: (value) {
+              setState(() {
+                _agreeToPrivacy = value ?? false;
+              });
+            },
+            title: const Text('개인정보 처리방침 동의'),
+            subtitle: const Text('(필수)'),
+            secondary: IconButton(
+              icon: const Icon(Icons.privacy_tip_outlined),
+              onPressed: () {
+                _showTermsDialog('개인정보 처리방침');
+              },
+            ),
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '회원가입과 동시에 Ittem의 일반회원이 되며, 언제든지 탈퇴할 수 있습니다.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleNext() {
+    if (_currentPage == 0) {
+      if (_validateStep1()) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } else if (_currentPage == 1) {
+      if (_validateStep2()) {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    } else if (_currentPage == 2) {
+      if (_validateStep3()) {
+        _signUp();
+      }
+    }
+  }
+
+  bool _validateStep1() {
+    return _emailController.text.isNotEmpty &&
+           _passwordController.text.isNotEmpty &&
+           _confirmPasswordController.text.isNotEmpty &&
+           _passwordController.text == _confirmPasswordController.text;
+  }
+
+  bool _validateStep2() {
+    return _nameController.text.isNotEmpty && _locationController.text.isNotEmpty;
+  }
+
+  bool _validateStep3() {
+    return _agreeToTerms && _agreeToPrivacy;
+  }
+
+  void _signUp() {
+    if (_formKey.currentState!.validate() && _validateStep3()) {
+      ref.read(authStateProvider.notifier).signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        name: _nameController.text.trim(),
+        location: _locationController.text.trim(),
+        phoneNumber: _phoneController.text.trim().isEmpty 
+            ? null 
+            : _phoneController.text.trim(),
+      );
+    } else if (!_validateStep3()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('필수 약관에 동의해주세요'),
+        ),
+      );
+    }
+  }
+
+  void _showLocationPicker() {
+    final locations = [
+      '강남구 역삼동',
+      '강남구 논현동',
+      '강남구 삼성동',
+      '강남구 청담동',
+      '서초구 서초동',
+      '서초구 반포동',
+      '송파구 잠실동',
+      '송파구 석촌동',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '거주 지역 선택',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              ...locations.map((location) {
+                return ListTile(
+                  title: Text(location),
+                  onTap: () {
+                    _locationController.text = location;
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showTermsDialog(String title) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Text(
+            title == '서비스 이용약관' 
+                ? '서비스 이용약관 내용...\n\n(실제 서비스에서는 상세한 약관 내용이 표시됩니다)'
+                : '개인정보 처리방침 내용...\n\n(실제 서비스에서는 상세한 개인정보 처리방침이 표시됩니다)',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+}
