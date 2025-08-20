@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'dart:html' as html;
 import '../config/env.dart';
 import '../shared/models/user_model.dart';
-import '../shared/models/item_model.dart';
 
 class PaymentService {
   static const _uuid = Uuid();

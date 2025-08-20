@@ -1,21 +1,46 @@
 class Env {
-  // Supabase Configuration
-  static const String supabaseUrl = 'https://wgkdityckpnavigmatqb.supabase.co';
-  static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indna2RpdHlja3BuYXZpZ21hdHFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2MjI2NzIsImV4cCI6MjA3MTE5ODY3Mn0.7a-_ll7n6M1tM4_-_vK5Kr0HDm0cB5oufK3yyYHA4YQ';
-  
-  // Google Maps API
-  static const String googleMapsApiKey = 'AIzaSyBglF4q6bn4rM7nPhUoI0OVD7ICHwLdWAI';
-  
-  // PortOne (아임포트) Configuration
-  static const String portoneApiKey = 'test_ck_lpP2YxJ4K877JAdv7KX8RGZwXLOb';
-  static const String portoneSecretKey = 'test_sk_d26DlbXAaV0xQbpa7y1VqY50Q9RB';
-  static const String portoneMerchantId = 'iamporttest';
-  
-  // App Configuration
-  static const String appName = 'Ittem';
-  static const String appVersion = '1.0.0';
-  
-  // Development flags
-  static const bool isProduction = false;
-  static const bool enableLogging = true;
+  static const String appEnv = String.fromEnvironment(
+    'APP_ENV',
+    defaultValue: 'dev',
+  );
+
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://your-project.supabase.co',
+  );
+
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'your-anon-key',
+  );
+
+  static const String googleMapsAndroidApiKey = String.fromEnvironment(
+    'GOOGLE_MAPS_ANDROID_API_KEY',
+    defaultValue: 'your-maps-api-key',
+  );
+
+  static const String portoneUserCode = String.fromEnvironment(
+    'PORTONE_USER_CODE',
+    defaultValue: 'imp_your_code',
+  );
+
+  static const String portonePg = String.fromEnvironment(
+    'PORTONE_PG',
+    defaultValue: 'html5_inicis',
+  );
+
+  static const String portoneMerchantUidPrefix = String.fromEnvironment(
+    'PORTONE_MERCHANT_UID_PREFIX',
+    defaultValue: 'ittem_',
+  );
+
+  static const String sentryDsn = String.fromEnvironment(
+    'SENTRY_DSN',
+    defaultValue: '',
+  );
+
+  // Computed values
+  static bool get isProduction => appEnv == 'prod';
+  static bool get isDevelopment => appEnv == 'dev';
+  static bool get enableLogging => !isProduction;
 }
