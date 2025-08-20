@@ -20,14 +20,14 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.ittem_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        applicationId = "com.ittem.app"
+        minSdk = 24
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Google Maps API Key from dart-define
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = project.findProperty("dart.env.GOOGLE_MAPS_ANDROID_API_KEY") ?: "your-api-key"
     }
 
     buildTypes {

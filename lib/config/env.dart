@@ -39,6 +39,10 @@ class Env {
     defaultValue: '',
   );
 
+  // Legacy field names for compatibility
+  static String get googleMapsApiKey => googleMapsAndroidApiKey;
+  static String get portoneApiKey => portoneUserCode;
+
   // Computed values
   static bool get isProduction => appEnv == 'prod';
   static bool get isDevelopment => appEnv == 'dev';
