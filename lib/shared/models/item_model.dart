@@ -10,6 +10,8 @@ class ItemModel {
   final int reviewCount;
   final bool isAvailable;
   final DateTime createdAt;
+  final double? latitude;
+  final double? longitude;
 
   ItemModel({
     required this.id,
@@ -23,6 +25,8 @@ class ItemModel {
     required this.reviewCount,
     this.isAvailable = true,
     DateTime? createdAt,
+    this.latitude,
+    this.longitude,
   }) : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() {
@@ -38,6 +42,8 @@ class ItemModel {
       'reviewCount': reviewCount,
       'isAvailable': isAvailable,
       'createdAt': createdAt.toIso8601String(),
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
@@ -54,6 +60,8 @@ class ItemModel {
       reviewCount: json['reviewCount'] ?? 0,
       isAvailable: json['isAvailable'] ?? true,
       createdAt: DateTime.parse(json['createdAt']),
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -69,6 +77,8 @@ class ItemModel {
     int? reviewCount,
     bool? isAvailable,
     DateTime? createdAt,
+    double? latitude,
+    double? longitude,
   }) {
     return ItemModel(
       id: id ?? this.id,
@@ -82,6 +92,8 @@ class ItemModel {
       reviewCount: reviewCount ?? this.reviewCount,
       isAvailable: isAvailable ?? this.isAvailable,
       createdAt: createdAt ?? this.createdAt,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
 }

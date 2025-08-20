@@ -1,7 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/supabase_service.dart';
 
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
+
+  @override
+  ConsumerState<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends ConsumerState<ChatScreen> {
+  List<Map<String, dynamic>> _chats = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChats();
+  }
+
+  Future<void> _loadChats() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final supabaseService = ref.read(supabaseServiceProvider);
+        final chats = await supabaseService.getChats(user.id);
+        
+        if (mounted) {
+          setState(() {
+            _chats = chats;
+            _isLoading = false;
+          });
+        }
+      } else {
+        // Fallback to dummy data if not authenticated
+        setState(() {
+          _chats = _dummyChats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading chats: $e');
+      if (mounted) {
+        setState(() {
+          _chats = _dummyChats; // Fallback to dummy data
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -9,114 +57,206 @@ class ChatScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('채팅'),
       ),
-      body: ListView.builder(
-        itemCount: _dummyChats.length,
-        itemBuilder: (context, index) {
-          final chat = _dummyChats[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: chat['avatar'] != null
-                  ? NetworkImage(chat['avatar'])
-                  : null,
-              child: chat['avatar'] == null
-                  ? Text(chat['name'][0])
-                  : null,
-            ),
-            title: Text(chat['name']),
-            subtitle: Text(
-              chat['lastMessage'],
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  chat['time'],
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
-                  ),
-                ),
-                if (chat['unreadCount'] > 0) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      chat['unreadCount'].toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _chats.isEmpty
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline,
+                        size: 64,
+                        color: Colors.grey,
                       ),
-                    ),
+                      SizedBox(height: 16),
+                      Text(
+                        '아직 채팅이 없습니다',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ],
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatDetailScreen(
-                    chatName: chat['name'],
-                    itemName: chat['itemName'],
+                )
+              : RefreshIndicator(
+                  onRefresh: _loadChats,
+                  child: ListView.builder(
+                    itemCount: _chats.length,
+                    itemBuilder: (context, index) {
+                      final chat = _chats[index];
+                      final participantName = chat['participant']?['name'] ?? 'Unknown';
+                      final itemTitle = chat['item']?['title'] ?? 'Unknown Item';
+                      final lastMessage = chat['last_message'] ?? 'No messages yet';
+                      
+                      return ListTile(
+                        leading: CircleAvatar(
+                          child: Text(participantName[0].toUpperCase()),
+                        ),
+                        title: Text(participantName),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              itemTitle,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            Text(
+                              lastMessage,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        trailing: chat['last_message_at'] != null
+                            ? Text(
+                                _formatTime(DateTime.parse(chat['last_message_at'])),
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey,
+                                ),
+                              )
+                            : null,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatDetailScreen(
+                                chatId: chat['id'],
+                                chatName: participantName,
+                                itemName: itemTitle,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
-              );
-            },
-          );
-        },
-      ),
     );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}일 전';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}시간 전';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}분 전';
+    } else {
+      return '방금';
+    }
   }
 }
 
-class ChatDetailScreen extends StatefulWidget {
+class ChatDetailScreen extends ConsumerStatefulWidget {
+  final String chatId;
   final String chatName;
   final String itemName;
 
   const ChatDetailScreen({
     super.key,
+    required this.chatId,
     required this.chatName,
     required this.itemName,
   });
 
   @override
-  State<ChatDetailScreen> createState() => _ChatDetailScreenState();
+  ConsumerState<ChatDetailScreen> createState() => _ChatDetailScreenState();
 }
 
-class _ChatDetailScreenState extends State<ChatDetailScreen> {
+class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
-  late final List<Map<String, dynamic>> _messages;
+  final ScrollController _scrollController = ScrollController();
+  List<Map<String, dynamic>> _messages = [];
+  RealtimeChannel? _realtimeChannel;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _messages = [
-      {
-        'text': '안녕하세요! ${widget.itemName} 대여 문의드려요.',
-        'isMe': false,
-        'time': '오후 2:30',
-      },
-      {
-        'text': '네 안녕하세요! 언제 사용하실 예정인가요?',
-        'isMe': true,
-        'time': '오후 2:32',
-      },
-      {
-        'text': '이번 주말에 사용하려고 합니다.',
-        'isMe': false,
-        'time': '오후 2:33',
-      },
-    ];
+    _loadMessages();
+    _setupRealtimeSubscription();
+  }
+
+  Future<void> _loadMessages() async {
+    try {
+      // In a real app, load messages from Supabase
+      // For now, use dummy data
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      setState(() {
+        _messages = [
+          {
+            'text': '안녕하세요! ${widget.itemName} 대여 문의드려요.',
+            'isMe': false,
+            'time': DateTime.now().subtract(const Duration(hours: 2)),
+            'sender_name': widget.chatName,
+          },
+          {
+            'text': '네 안녕하세요! 언제 사용하실 예정인가요?',
+            'isMe': true,
+            'time': DateTime.now().subtract(const Duration(hours: 1, minutes: 58)),
+            'sender_name': 'Me',
+          },
+          {
+            'text': '이번 주말에 사용하려고 합니다.',
+            'isMe': false,
+            'time': DateTime.now().subtract(const Duration(hours: 1, minutes: 57)),
+            'sender_name': widget.chatName,
+          },
+        ];
+        _isLoading = false;
+      });
+      
+      _scrollToBottom();
+    } catch (e) {
+      debugPrint('Error loading messages: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _setupRealtimeSubscription() {
+    try {
+      final supabaseService = ref.read(supabaseServiceProvider);
+      _realtimeChannel = supabaseService.subscribeToChat(
+        widget.chatId,
+        (message) {
+          if (mounted) {
+            setState(() {
+              _messages.add({
+                'text': message['message'],
+                'isMe': false, // Will be determined based on sender_id
+                'time': DateTime.now(),
+                'sender_name': message['sender_name'] ?? 'Unknown',
+              });
+            });
+            _scrollToBottom();
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('Error setting up realtime subscription: $e');
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
@@ -149,14 +289,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return _buildMessage(message);
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      return _buildMessage(message);
+                    },
+                  ),
           ),
           Container(
             padding: const EdgeInsets.all(16),
@@ -233,7 +376,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    message['time'],
+                    _formatMessageTime(message['time']),
                     style: TextStyle(
                       fontSize: 12,
                       color: message['isMe']
@@ -257,22 +400,81 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isNotEmpty) {
-      setState(() {
-        _messages.add({
-          'text': _messageController.text.trim(),
-          'isMe': true,
-          'time': '방금',
-        });
-      });
+  Future<void> _sendMessage() async {
+    final messageText = _messageController.text.trim();
+    if (messageText.isNotEmpty) {
       _messageController.clear();
+      
+      // Add message to local list immediately for better UX
+      final tempMessage = {
+        'text': messageText,
+        'isMe': true,
+        'time': DateTime.now(),
+        'sender_name': 'Me',
+        'sending': true,
+      };
+      
+      setState(() {
+        _messages.add(tempMessage);
+      });
+      
+      _scrollToBottom();
+      
+      try {
+        final user = Supabase.instance.client.auth.currentUser;
+        if (user != null) {
+          final supabaseService = ref.read(supabaseServiceProvider);
+          await supabaseService.sendMessage(
+            chatId: widget.chatId,
+            senderId: user.id,
+            message: messageText,
+          );
+          
+          // Update the message to show it was sent successfully
+          setState(() {
+            final index = _messages.indexOf(tempMessage);
+            if (index != -1) {
+              _messages[index] = {
+                ...tempMessage,
+                'sending': false,
+              };
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint('Error sending message: $e');
+        // Show error state or retry option
+        setState(() {
+          final index = _messages.indexOf(tempMessage);
+          if (index != -1) {
+            _messages[index] = {
+              ...tempMessage,
+              'sending': false,
+              'error': true,
+            };
+          }
+        });
+      }
+    }
+  }
+  
+  String _formatMessageTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    
+    if (messageDate == today) {
+      return '오후 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } else {
+      return '${messageDate.month}/${messageDate.day} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
     }
   }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
+    _realtimeChannel?.unsubscribe();
     super.dispose();
   }
 }

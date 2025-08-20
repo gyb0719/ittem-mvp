@@ -1,11 +1,100 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/routes/app_routes.dart';
 import '../../shared/widgets/item_card.dart';
 import '../../shared/models/item_model.dart';
+import '../../services/supabase_service.dart';
+import '../../services/google_maps_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  List<ItemModel> _items = [];
+  String _currentLocation = '위치 확인 중...';
+  String? _selectedCategory;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadCurrentLocation(),
+      _loadItems(),
+    ]);
+    
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _loadCurrentLocation() async {
+    try {
+      final mapsService = ref.read(googleMapsServiceProvider);
+      final location = await mapsService.getCurrentLocation();
+      
+      if (location != null) {
+        final address = await mapsService.reverseGeocode(location);
+        if (address != null && mounted) {
+          setState(() {
+            _currentLocation = address.split(',').first; // Get first part of address
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading location: $e');
+      if (mounted) {
+        setState(() {
+          _currentLocation = '강남구 역삼동';
+        });
+      }
+    }
+  }
+
+  Future<void> _loadItems() async {
+    try {
+      final supabaseService = ref.read(supabaseServiceProvider);
+      final items = await supabaseService.getItems(
+        category: _selectedCategory,
+        limit: 10,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _items = items;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading items: $e');
+      if (mounted) {
+        setState(() {
+          _items = _dummyItems; // Fallback to dummy data
+        });
+      }
+    }
+  }
+
+  Future<void> _onCategorySelected(String category) async {
+    setState(() {
+      _selectedCategory = category == '전체' ? null : category;
+      _isLoading = true;
+    });
+    
+    await _loadItems();
+    
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +108,9 @@ class HomeScreen extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 4),
-            const Text(
-              '강남구 역삼동',
-              style: TextStyle(fontSize: 16),
+            Text(
+              _currentLocation,
+              style: const TextStyle(fontSize: 16),
             ),
             const Icon(Icons.keyboard_arrow_down),
           ],
@@ -33,7 +122,7 @@ class HomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            onPressed: () => context.go(AppRoutes.notifications),
           ),
         ],
       ),
@@ -93,6 +182,7 @@ class HomeScreen extends StatelessWidget {
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: [
+                        _buildCategoryItem(context, Icons.view_agenda, '전체'),
                         _buildCategoryItem(context, Icons.camera_alt, '카메라'),
                         _buildCategoryItem(context, Icons.sports_basketball, '스포츠'),
                         _buildCategoryItem(context, Icons.home_repair_service, '도구'),
@@ -131,10 +221,28 @@ class HomeScreen extends StatelessWidget {
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  final item = _dummyItems[index % _dummyItems.length];
+                  if (_isLoading) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+                  
+                  if (_items.isEmpty) {
+                    return const Center(
+                      child: Text('등록된 아이템이 없습니다.'),
+                    );
+                  }
+                  
+                  final item = _items[index % _items.length];
                   return ItemCard(item: item);
                 },
-                childCount: 6,
+                childCount: _isLoading ? 6 : (_items.isEmpty ? 1 : _items.length.clamp(0, 6)),
               ),
             ),
           ),
@@ -147,31 +255,46 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildCategoryItem(BuildContext context, IconData icon, String label) {
-    return Container(
-      width: 70,
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+    final isSelected = (_selectedCategory == label) || 
+                      (label == '전체' && _selectedCategory == null);
+    
+    return GestureDetector(
+      onTap: () => _onCategorySelected(label),
+      child: Container(
+        width: 70,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected 
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.primary,
+                size: 24,
+              ),
             ),
-            child: Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
-              size: 24,
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+                fontWeight: isSelected ? FontWeight.w600 : null,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../models/item_model.dart';
+import '../../app/routes/app_routes.dart';
 
 class ItemCard extends StatelessWidget {
   final ItemModel item;
@@ -16,7 +18,7 @@ class ItemCard extends StatelessWidget {
     return Card(
       elevation: 0,
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap ?? () => context.go(AppRoutes.itemDetail(item.id)),
         borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

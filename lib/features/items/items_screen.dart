@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../shared/widgets/item_card.dart';
 import '../../shared/models/item_model.dart';
+import '../../app/routes/app_routes.dart';
 
 class ItemsScreen extends StatefulWidget {
   const ItemsScreen({super.key});
@@ -76,7 +78,7 @@ class _ItemsScreenState extends State<ItemsScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => context.go(AppRoutes.addItem),
         child: const Icon(Icons.add),
       ),
     );

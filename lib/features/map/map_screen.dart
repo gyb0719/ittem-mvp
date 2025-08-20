@@ -1,32 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../services/google_maps_service.dart';
+import '../../services/supabase_service.dart';
+import '../../shared/models/item_model.dart';
 
-class MapScreen extends StatefulWidget {
+class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends ConsumerState<MapScreen> {
   GoogleMapController? _mapController;
+  Set<Marker> _markers = {};
+  List<ItemModel> _items = [];
+  String? _selectedCategory;
   
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(37.4979, 127.0276),
     zoom: 14.0,
   );
 
-  // 실제 앱에서는 마커들이 사용됨 (현재는 지도 대신 플레이스홀더 표시)
-  // final Set<Marker> _markers = {
-  //   const Marker(
-  //     markerId: MarkerId('item1'),
-  //     position: LatLng(37.4979, 127.0276),
-  //     infoWindow: InfoWindow(
-  //       title: '캐논 DSLR 카메라',
-  //       snippet: '15,000원/일',
-  //     ),
-  //   ),
-  // };
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+    _getCurrentLocation();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      final mapsService = ref.read(googleMapsServiceProvider);
+      final location = await mapsService.getCurrentLocation();
+      
+      if (location != null && _mapController != null) {
+        await _mapController!.animateCamera(
+          CameraUpdate.newLatLng(location),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error getting current location: $e');
+    }
+  }
+
+  Future<void> _loadItems() async {
+    try {
+      final supabaseService = ref.read(supabaseServiceProvider);
+      final items = await supabaseService.getItems(
+        category: _selectedCategory,
+      );
+      
+      setState(() {
+        _items = items;
+        _updateMarkers();
+      });
+    } catch (e) {
+      debugPrint('Error loading items: $e');
+    }
+  }
+
+  void _updateMarkers() {
+    final mapsService = ref.read(googleMapsServiceProvider);
+    final itemsWithPosition = _items.map((item) => {
+      'id': item.id,
+      'title': item.title,
+      'price': item.price,
+      'category': item.category,
+      'position': LatLng(
+        item.latitude ?? 37.4979,
+        item.longitude ?? 127.0276,
+      ),
+    }).toList();
+
+    setState(() {
+      _markers = mapsService.createItemMarkers(
+        itemsWithPosition,
+        _onMarkerTap,
+      );
+    });
+  }
+
+  void _onMarkerTap(String itemId) {
+    final item = _items.firstWhere((item) => item.id == itemId);
+    _showItemBottomSheet(item);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,32 +104,20 @@ class _MapScreenState extends State<MapScreen> {
       ),
       body: Stack(
         children: [
-          Container(
-            color: Colors.grey[200],
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.map_outlined,
-                    size: 64,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    '지도 화면',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Google Maps API 키 설정 후 사용 가능',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          GoogleMap(
+            onMapCreated: (GoogleMapController controller) {
+              _mapController = controller;
+            },
+            initialCameraPosition: _initialPosition,
+            markers: _markers,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            compassEnabled: true,
+            onTap: (LatLng position) {
+              // 지도 탭 시 마커 추가 또는 기타 액션
+            },
           ),
           Positioned(
             top: 16,
@@ -121,73 +168,87 @@ class _MapScreenState extends State<MapScreen> {
               height: 120,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: _mapItems.length,
+                itemCount: _items.length,
                 itemBuilder: (context, index) {
-                  final item = _mapItems[index];
-                  return Container(
-                    width: 280,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.image,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    item['title'],
-                                    style: Theme.of(context).textTheme.titleSmall,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${item['price']}원/일',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.location_on,
-                                        size: 14,
-                                        color: Colors.grey,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Expanded(
-                                        child: Text(
-                                          item['location'],
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: Colors.grey,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
+                  final item = _items[index];
+                  return GestureDetector(
+                    onTap: () => _showItemBottomSheet(item),
+                    child: Container(
+                      width: 280,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: item.imageUrl.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          item.imageUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Icon(Icons.image, color: Colors.grey);
+                                          },
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                      )
+                                    : const Icon(Icons.image, color: Colors.grey),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      item.title,
+                                      style: Theme.of(context).textTheme.titleSmall,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${item.price.toString().replaceAllMapped(
+                                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                        (Match m) => '${m[1]},',
+                                      )}원/일',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on,
+                                          size: 14,
+                                          color: Colors.grey,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Expanded(
+                                          child: Text(
+                                            item.location,
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Colors.grey,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -201,11 +262,20 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  void _goToCurrentLocation() {
-    if (_mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(_initialPosition),
-      );
+  void _goToCurrentLocation() async {
+    try {
+      final mapsService = ref.read(googleMapsServiceProvider);
+      final location = await mapsService.getCurrentLocation();
+      
+      if (location != null && _mapController != null) {
+        await _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: location, zoom: 16.0),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error going to current location: $e');
     }
   }
 
@@ -248,11 +318,17 @@ class _MapScreenState extends State<MapScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: ['전체', '카메라', '스포츠', '도구', '주방용품'].map((category) {
+                children: ['전체', '카메라', '스포츠', '도구', '주방용품', '완구', '악기'].map((category) {
                   return FilterChip(
                     label: Text(category),
-                    selected: category == '전체',
-                    onSelected: (selected) {},
+                    selected: _selectedCategory == category || 
+                             (category == '전체' && _selectedCategory == null),
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedCategory = category == '전체' ? null : category;
+                      });
+                      _loadItems();
+                    },
                   );
                 }).toList(),
               ),
@@ -271,22 +347,105 @@ class _MapScreenState extends State<MapScreen> {
       },
     );
   }
-}
 
-final List<Map<String, dynamic>> _mapItems = [
-  {
-    'title': '캐논 DSLR 카메라',
-    'price': '15,000',
-    'location': '강남구 역삼동',
-  },
-  {
-    'title': '캠핑 텐트 (4인용)',
-    'price': '25,000',
-    'location': '강남구 논현동',
-  },
-  {
-    'title': '전동 드릴',
-    'price': '8,000',
-    'location': '강남구 삼성동',
-  },
-];
+  void _showItemBottomSheet(ItemModel item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: item.imageUrl.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              item.imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(Icons.image, color: Colors.grey);
+                              },
+                            ),
+                          )
+                        : const Icon(Icons.image, color: Colors.grey),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${item.price.toString().replaceAllMapped(
+                            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                            (Match m) => '${m[1]},',
+                          )}원/일',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                item.location,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                item.description,
+                style: Theme.of(context).textTheme.bodyMedium,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Navigate to item detail screen
+                    // GoRouter.of(context).push('/items/${item.id}');
+                  },
+                  child: const Text('상세보기'),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

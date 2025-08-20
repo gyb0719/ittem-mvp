@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ittem_mvp/shared/models/item_model.dart';
+import 'package:ittem_app/shared/models/item_model.dart';
 
 void main() {
   group('ItemModel.fromJson', () {
