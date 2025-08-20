@@ -350,7 +350,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   
   final List<Map<String, dynamic>> _messages = [
     {
-      'text': '안녕하세요! ${widget.itemTitle} 대여 문의드려요.',
+      'text': '안녕하세요! 브라이언 토이 콜더브루 세트 대여 문의드려요.',
       'isMe': false,
       'time': '오후 2:30',
     },

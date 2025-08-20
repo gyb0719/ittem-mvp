@@ -18,12 +18,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _residentNumberController = TextEditingController();
   final _locationController = TextEditingController();
   
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
   bool _agreeToPrivacy = false;
+  bool _phoneVerified = false;
   int _currentPage = 0;
 
   @override
@@ -33,6 +35,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     _confirmPasswordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    _residentNumberController.dispose();
     _locationController.dispose();
     _pageController.dispose();
     super.dispose();
@@ -282,22 +285,85 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           const SizedBox(height: 16),
           
           TextFormField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
+            controller: _residentNumberController,
+            keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: '휴대폰 번호 (선택)',
-              hintText: '010-1234-5678',
-              prefixIcon: Icon(Icons.phone_outlined),
+              labelText: '주민등록번호',
+              hintText: '123456-1234567',
+              prefixIcon: Icon(Icons.credit_card_outlined),
             ),
             validator: (value) {
-              if (value != null && value.isNotEmpty) {
-                if (!RegExp(r'^010-\d{4}-\d{4}$').hasMatch(value)) {
-                  return '올바른 휴대폰 번호 형식을 입력해주세요 (010-1234-5678)';
-                }
+              if (value == null || value.isEmpty) {
+                return '주민등록번호를 입력해주세요';
+              }
+              if (!RegExp(r'^\d{6}-\d{7}$').hasMatch(value)) {
+                return '올바른 주민등록번호 형식을 입력해주세요 (123456-1234567)';
               }
               return null;
             },
           ),
+          
+          const SizedBox(height: 16),
+          
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: '휴대폰 번호',
+                    hintText: '010-1234-5678',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return '휴대폰 번호를 입력해주세요';
+                    }
+                    if (!RegExp(r'^010-\d{4}-\d{4}$').hasMatch(value)) {
+                      return '올바른 휴대폰 번호 형식을 입력해주세요';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _phoneController.text.isNotEmpty && !_phoneVerified
+                    ? _sendPhoneVerification
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _phoneVerified ? Colors.green : null,
+                ),
+                child: Text(_phoneVerified ? '인증완료' : '인증'),
+              ),
+            ],
+          ),
+          
+          if (!_phoneVerified && _phoneController.text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: '인증번호',
+                        hintText: '6자리 숫자',
+                        prefixIcon: Icon(Icons.security_outlined),
+                      ),
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _verifyPhone,
+                    child: const Text('확인'),
+                  ),
+                ],
+              ),
+            ),
           
           const SizedBox(height: 16),
           
@@ -441,7 +507,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   }
 
   bool _validateStep2() {
-    return _nameController.text.isNotEmpty && _locationController.text.isNotEmpty;
+    return _nameController.text.isNotEmpty && 
+           _residentNumberController.text.isNotEmpty &&
+           _phoneController.text.isNotEmpty &&
+           _phoneVerified &&
+           _locationController.text.isNotEmpty;
   }
 
   bool _validateStep3() {
@@ -454,10 +524,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         name: _nameController.text.trim(),
+        residentNumber: _residentNumberController.text.trim(),
         location: _locationController.text.trim(),
-        phoneNumber: _phoneController.text.trim().isEmpty 
-            ? null 
-            : _phoneController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
       );
     } else if (!_validateStep3()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -508,6 +577,42 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _sendPhoneVerification() {
+    if (_phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('휴대폰 번호를 입력해주세요')),
+      );
+      return;
+    }
+    
+    // 실제로는 SMS API를 통해 인증번호를 발송
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${_phoneController.text}로 인증번호를 발송했습니다'),
+        backgroundColor: Colors.green,
+      ),
+    );
+    
+    setState(() {
+      // 인증번호 입력 필드 표시
+    });
+  }
+  
+  void _verifyPhone() {
+    // 실제로는 서버에서 인증번호를 확인
+    // 여기서는 임시로 인증 완료 처리
+    setState(() {
+      _phoneVerified = true;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('휴대폰 인증이 완료되었습니다'),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 

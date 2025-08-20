@@ -40,6 +40,7 @@ class AuthService {
     required String name,
     required String location,
     String? phoneNumber,
+    String? residentNumber,
   }) async {
     try {
       // 실제로는 백엔드 API 호출
@@ -183,6 +184,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     required String name,
     required String location,
     String? phoneNumber,
+    String? residentNumber,
   }) async {
     state = AuthState.loading();
     final result = await _authService.signUp(
@@ -191,6 +193,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       name: name,
       location: location,
       phoneNumber: phoneNumber,
+      residentNumber: residentNumber,
     );
     
     if (result.isSuccess) {

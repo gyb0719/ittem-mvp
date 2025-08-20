@@ -13,6 +13,37 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
+  bool _isLoading = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+  
+  Future<void> _loadData() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // 데이터 로딩 시뮬레이션 (실제로는 Supabase에서 데이터를 가져옴)
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // 임시로 샘플 데이터 사용 (데이터베이스 설정 완료 후 실제 데이터로 교체)
+      
+    } catch (e) {
+      print('Get items error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
   
   // 샘플 데이터 (실제로는 Supabase에서 가져올 예정)
   final List<Map<String, dynamic>> _sampleItems = [
@@ -96,22 +127,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Column(
         children: [
-          // 카테고리 탭 섹션
+          // 검색창
           Container(
-            height: 50,
+            margin: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: '어떤 물건을 찾고 계신가요?',
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              ),
+            ),
+          ),
+          
+          // 카테고리 섹션
+          Container(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildCategoryTab('전체', true),
-                const SizedBox(width: 20),
-                _buildCategoryTab('부동산', false),
-                const SizedBox(width: 20),
-                _buildCategoryTab('중고차', false),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '카테고리',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      child: const Text(
+                        '전체보기',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildCategoryIcon(Icons.apps, '전체', Colors.blue),
+                    _buildCategoryIcon(Icons.camera_alt, '카메라', Colors.orange),
+                    _buildCategoryIcon(Icons.sports_basketball, '스포츠', Colors.green),
+                    _buildCategoryIcon(Icons.home, '도구', Colors.purple),
+                    _buildCategoryIcon(Icons.shopping_bag, '주방용품', Colors.red),
+                  ],
+                ),
               ],
             ),
           ),
           
-          const Divider(height: 1, color: AppColors.separator),
+          const SizedBox(height: 24),
+          
+          // 내 주변 인기 아이템 섹션
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '내 주변 인기 아이템',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    '더보기',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 8),
           
           // 아이템 리스트
           Expanded(
@@ -138,25 +246,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryTab(String title, bool isSelected) {
+  Widget _buildCategoryIcon(IconData icon, String label, Color color) {
     return GestureDetector(
       onTap: () {
         // Handle category selection
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 30,
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -252,6 +371,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // 하트 아이콘
               IconButton(
                 onPressed: () {
+                  if (!mounted) return;
                   setState(() {
                     _sampleItems[_sampleItems.indexOf(item)]['isLiked'] = 
                         !item['isLiked'];
