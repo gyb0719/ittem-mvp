@@ -50,8 +50,8 @@ class ItemModel {
       imageUrl: json['imageUrl'],
       category: json['category'],
       location: json['location'],
-      rating: json['rating'].toDouble(),
-      reviewCount: json['reviewCount'],
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: json['reviewCount'] ?? 0,
       isAvailable: json['isAvailable'] ?? true,
       createdAt: DateTime.parse(json['createdAt']),
     );
