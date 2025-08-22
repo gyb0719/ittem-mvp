@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_theme.dart';
+import '../theme/theme_service.dart';
+import '../shared/animations/animations.dart';
+import '../shared/responsive/adaptive_scaffold.dart';
 import 'routes/app_routes.dart';
 
 class IttemApp extends ConsumerWidget {
@@ -9,18 +11,34 @@ class IttemApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeNotifierProvider);
+    
+    ThemeMode materialThemeMode;
+    switch (themeMode) {
+      case AppThemeMode.light:
+        materialThemeMode = ThemeMode.light;
+        break;
+      case AppThemeMode.dark:
+        materialThemeMode = ThemeMode.dark;
+        break;
+      case AppThemeMode.system:
+        materialThemeMode = ThemeMode.system;
+        break;
+    }
+
     return MaterialApp.router(
-      title: 'Ittem - 지역 기반 물건 대여',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      title: 'Ittem - 우리 동네 물건 공유',
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: materialThemeMode,
       routerConfig: AppRoutes.router,
       debugShowCheckedModeBanner: false,
+      showPerformanceOverlay: false,
     );
   }
 }
 
-class MainNavigationWrapper extends StatefulWidget {
+class MainNavigationWrapper extends StatelessWidget {
   final Widget child;
   
   const MainNavigationWrapper({
@@ -29,84 +47,27 @@ class MainNavigationWrapper extends StatefulWidget {
   });
 
   @override
-  State<MainNavigationWrapper> createState() => _MainNavigationWrapperState();
-}
-
-class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
-  int _selectedIndex = 0;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    
-    switch (index) {
-      case 0:
-        context.go(AppRoutes.home);
-        break;
-      case 1:
-        context.go(AppRoutes.items);
-        break;
-      case 2:
-        context.go(AppRoutes.chat);
-        break;
-      case 3:
-        context.go(AppRoutes.profile);
-        break;
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final state = ModalRoute.of(context)?.settings.name ?? AppRoutes.home;
-    switch (state) {
-      case AppRoutes.home:
-        _selectedIndex = 0;
-        break;
-      case AppRoutes.items:
-        _selectedIndex = 1;
-        break;
-      case AppRoutes.chat:
-        _selectedIndex = 2;
-        break;
-      case AppRoutes.profile:
-        _selectedIndex = 3;
-        break;
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: widget.child,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: '홈',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_outlined),
-            activeIcon: Icon(Icons.shopping_bag),
-            label: '대여목록',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: '채팅',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: '프로필',
-          ),
-        ],
+    // 현재 라우트 가져오기
+    final currentRoute = GoRouterState.of(context).matchedLocation;
+    
+    // 홈 화면인지 확인
+    final isHome = currentRoute == '/home';
+    
+    return PopScope(
+      canPop: !isHome, // 홈 화면이 아닐 때만 뒤로 가기 가능
+      onPopInvoked: (didPop) {
+        if (!didPop && !isHome) {
+          // 홈이 아닌 화면에서 홈으로 이동
+          context.go('/home');
+        }
+      },
+      child: AdaptiveScaffold(
+        body: child,
+        currentRoute: currentRoute,
+        destinations: DefaultDestinations.main,
       ),
     );
   }
 }
+

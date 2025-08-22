@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+env/*.json
+
+# Environment variables - Keep template files only
+.env
+.env.local
+.env.*.local
+# Keep .env.example, .env.dev, .env.prod as templates

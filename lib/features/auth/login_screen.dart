@@ -192,26 +192,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 16),
                 
                 // 소셜 로그인 버튼들
-                Row(
+                Column(
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
+                    // 카카오톡 로그인
+                    SizedBox(
+                      height: 48,
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
                         onPressed: authState is AuthStateLoading 
                             ? null 
-                            : () => ref.read(authStateProvider.notifier).signInWithGoogle(),
-                        icon: const Icon(Icons.g_mobiledata, size: 24),
-                        label: const Text('Google'),
+                            : () => _signInWithKakao(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFEE500),
+                          foregroundColor: const Color(0xFF3C1E1E),
+                          elevation: 0,
+                        ),
+                        icon: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFF3C1E1E),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '카',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFFEE500),
+                              ),
+                            ),
+                          ),
+                        ),
+                        label: const Text('카카오톡으로 시작하기'),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: authState is AuthStateLoading 
-                            ? null 
-                            : () => ref.read(authStateProvider.notifier).signInWithApple(),
-                        icon: const Icon(Icons.apple, size: 20),
-                        label: const Text('Apple'),
-                      ),
+                    const SizedBox(height: 12),
+                    // 구글, 애플 로그인
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: authState is AuthStateLoading 
+                                ? null 
+                                : () => ref.read(authStateProvider.notifier).signInWithGoogle(),
+                            icon: const Icon(Icons.g_mobiledata, size: 24),
+                            label: const Text('Google'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: authState is AuthStateLoading 
+                                ? null 
+                                : () => ref.read(authStateProvider.notifier).signInWithApple(),
+                            icon: const Icon(Icons.apple, size: 20),
+                            label: const Text('Apple'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -277,6 +317,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _passwordController.text,
       );
     }
+  }
+
+  void _signInWithKakao() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('카카오톡 로그인 기능을 준비 중입니다'),
+      ),
+    );
   }
 
   void _showForgotPasswordDialog(BuildContext context) {
