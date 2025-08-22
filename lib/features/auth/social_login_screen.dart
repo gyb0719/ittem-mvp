@@ -76,7 +76,7 @@ class _SocialLoginScreenState extends ConsumerState<SocialLoginScreen>
                             height: 200,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: AppColors.heroGradient.withStops([0.0, 1.0]),
+                              gradient: AppColors.heroGradient,
                               boxShadow: [
                                 BoxShadow(
                                   color: AppColors.primary.withValues(alpha: 0.3),
@@ -142,36 +142,43 @@ class _SocialLoginScreenState extends ConsumerState<SocialLoginScreen>
                   const SizedBox(height: 60),
                   
                   // 소셜 로그인 버튼들
-                  _buildSocialLoginButton(
-                    'Kakao로 시작하기',
-                    Colors.yellow[600]!,
-                    Colors.black87,
-                    Icons.chat_bubble,
-                    () => _handleKakaoLogin(),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        _buildSocialLoginButton(
+                          'Kakao로 시작하기',
+                          Colors.yellow[600]!,
+                          Colors.black87,
+                          Icons.chat_bubble,
+                          () => _handleKakaoLogin(),
+                        ),
+                        
+                        const SizedBox(height: 12),
+                        
+                        _buildSocialLoginButton(
+                          'Naver로 시작하기', 
+                          const Color(0xFF03C75A),
+                          Colors.white,
+                          Icons.login,
+                          () => _handleNaverLogin(),
+                        ),
+                        
+                        const SizedBox(height: 12),
+                        
+                        _buildSocialLoginButton(
+                          'Google로 시작하기',
+                          Colors.white,
+                          Colors.black87,
+                          Icons.g_mobiledata,
+                          () => _handleGoogleLogin(),
+                          hasBorder: true,
+                        ),
+                      ],
+                    ),
                   ),
                   
-                  const SizedBox(height: 12),
-                  
-                  _buildSocialLoginButton(
-                    'Naver로 시작하기', 
-                    const Color(0xFF03C75A),
-                    Colors.white,
-                    Icons.login,
-                    () => _handleNaverLogin(),
-                  ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  _buildSocialLoginButton(
-                    'Google로 시작하기',
-                    Colors.white,
-                    Colors.black87,
-                    Icons.g_mobiledata,
-                    () => _handleGoogleLogin(),
-                    hasBorder: true,
-                  ),
-                  
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
                   
                   // 약관 동의
                   const Text(
@@ -184,7 +191,7 @@ class _SocialLoginScreenState extends ConsumerState<SocialLoginScreen>
                     textAlign: TextAlign.center,
                   ),
                   
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

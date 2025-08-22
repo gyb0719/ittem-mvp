@@ -24,7 +24,7 @@ class ImageUploadService {
 
       if (image == null) return null;
 
-      final fileName = '${folder}/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
+      final fileName = '$folder/${DateTime.now().millisecondsSinceEpoch}_${image.name}';
       
       if (kIsWeb) {
         // Web implementation
@@ -61,7 +61,7 @@ class ImageUploadService {
 
       for (int i = 0; i < selectedImages.length; i++) {
         final image = selectedImages[i];
-        final fileName = '${folder}/${DateTime.now().millisecondsSinceEpoch}_${i}_${image.name}';
+        final fileName = '$folder/${DateTime.now().millisecondsSinceEpoch}_${i}_${image.name}';
         
         try {
           String? url;

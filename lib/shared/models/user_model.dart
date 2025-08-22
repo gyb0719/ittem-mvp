@@ -1,89 +1,53 @@
-class UserModel {
-  final String id;
-  final String email;
-  final String name;
-  final String? profileImageUrl;
-  final String? phoneNumber;
-  final String location;
-  final double rating;
-  final int transactionCount;
-  final bool isVerified;
-  final DateTime createdAt;
-  final DateTime? lastLoginAt;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  UserModel({
-    required this.id,
-    required this.email,
-    required this.name,
-    this.profileImageUrl,
-    this.phoneNumber,
-    required this.location,
-    this.rating = 0.0,
-    this.transactionCount = 0,
-    this.isVerified = false,
-    required this.createdAt,
-    this.lastLoginAt,
-  });
+part 'user_model.freezed.dart';
+part 'user_model.g.dart';
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'email': email,
-      'name': name,
-      'profileImageUrl': profileImageUrl,
-      'phoneNumber': phoneNumber,
-      'location': location,
-      'rating': rating,
-      'transactionCount': transactionCount,
-      'isVerified': isVerified,
-      'createdAt': createdAt.toIso8601String(),
-      'lastLoginAt': lastLoginAt?.toIso8601String(),
-    };
-  }
-
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'],
-      email: json['email'],
-      name: json['name'],
-      profileImageUrl: json['profileImageUrl'],
-      phoneNumber: json['phoneNumber'],
-      location: json['location'],
-      rating: json['rating']?.toDouble() ?? 0.0,
-      transactionCount: json['transactionCount'] ?? 0,
-      isVerified: json['isVerified'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
-      lastLoginAt: json['lastLoginAt'] != null 
-          ? DateTime.parse(json['lastLoginAt']) 
-          : null,
-    );
-  }
-
-  UserModel copyWith({
-    String? id,
-    String? email,
-    String? name,
+@freezed
+class UserModel with _$UserModel {
+  const factory UserModel({
+    required String id,
+    required String email,
+    required String name,
     String? profileImageUrl,
     String? phoneNumber,
-    String? location,
-    double? rating,
-    int? transactionCount,
-    bool? isVerified,
-    DateTime? createdAt,
+    String? bio,
+    required String location,
+    @Default(0.0) double rating,
+    @Default(0) int transactionCount,
+    @Default(false) bool isVerified,
+    
+    // Enhanced verification fields
+    @Default(false) bool isPhoneVerified,
+    @Default(false) bool isEmailVerified,
+    @Default(false) bool isIdVerified,
+    @Default(false) bool isAddressVerified,
+    @Default(false) bool isBankAccountVerified,
+    
+    // Trust system fields
+    @Default(0) int trustScore,
+    @Default('bronze') String trustLevel, // bronze, silver, gold, platinum
+    @Default(0) int reportCount,
+    @Default(false) bool isBlocked,
+    @Default(false) bool isPremiumMember,
+    
+    // Safety and privacy settings
+    @Default(true) bool allowDirectContact,
+    @Default(true) bool showExactLocation,
+    @Default(true) bool allowRatingDisplay,
+    @Default([]) List<String> blockedUsers,
+    
+    // Activity tracking
+    @Default(0) int successfulTransactions,
+    @Default(0) int cancelledTransactions,
+    @Default(0) int reviewsReceived,
+    @Default(0) int reviewsGiven,
+    DateTime? lastVerificationDate,
+    
+    required DateTime createdAt,
     DateTime? lastLoginAt,
-  }) {
-    return UserModel(
-      id: id ?? this.id,
-      email: email ?? this.email,
-      name: name ?? this.name,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      location: location ?? this.location,
-      rating: rating ?? this.rating,
-      transactionCount: transactionCount ?? this.transactionCount,
-      isVerified: isVerified ?? this.isVerified,
-      createdAt: createdAt ?? this.createdAt,
-      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
-    );
-  }
+  }) = _UserModel;
+
+  factory UserModel.fromJson(Map<String, dynamic> json) => 
+      _$UserModelFromJson(json);
 }

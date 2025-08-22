@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary Luna-inspired colors
-  static const Color primary = Color(0xFF6366F1); // Indigo
-  static const Color primaryVariant = Color(0xFF4F46E5);
-  static const Color secondary = Color(0xFF8B5CF6); // Purple accent
-  static const Color accent = Color(0xFFEC4899); // Pink accent
+  // Primary colors inspired by GPT icon teal/turquoise - 4-tier teal system
+  static const Color primary = Color(0xFF5CBDBD); // Main teal from the icon
+  static const Color primaryVariant = Color(0xFF4A9E9E); // Dark teal for emphasis
+  static const Color secondary = Color(0xFF72D5D5); // Light teal for secondary elements
+  static const Color accent = Color(0xFF45A5A5); // Darker teal accent
+  static const Color tealPale = Color(0xFFE5F7F7); // Pale teal for backgrounds/cards
   
-  // Light theme colors
-  static const Color background = Color(0xFFF8FAFC); // Very light gray
+  // Light theme colors (c2.png 스타일에 맞춘 밝고 깔끔한 색상)
+  static const Color background = Color(0xFFF9FAFB); // 매우 밝은 회색
   static const Color surface = Color(0xFFFFFFFF);
   static const Color cardBackground = Color(0xFFFFFFFF);
-  static const Color navigationBar = Color(0xFFF8FAFC);
+  static const Color navigationBar = Color(0xFFFFFFFF);
   
   // Text colors - light theme
   static const Color textPrimary = Color(0xFF1E293B); // Dark slate
@@ -43,10 +44,10 @@ class AppColors {
   static const Color overlay = Color(0x80000000);
   
   // Map specific colors
-  static const Color mapClusterSmall = Color(0xFF8B5CF6);
-  static const Color mapClusterMedium = Color(0xFF6366F1);
-  static const Color mapClusterLarge = Color(0xFF3B82F6);
-  static const Color mapUserLocation = Color(0xFFEC4899);
+  static const Color mapClusterSmall = Color(0xFF72D5D5);
+  static const Color mapClusterMedium = Color(0xFF5CBDBD);
+  static const Color mapClusterLarge = Color(0xFF4A9E9E);
+  static const Color mapUserLocation = Color(0xFF45A5A5);
   
   // Status colors
   static const Color available = Color(0xFF10B981);
@@ -54,21 +55,21 @@ class AppColors {
   static const Color archived = Color(0xFF64748B);
   
   // Rental status colors
-  static const Color requested = Color(0xFF8B5CF6);
+  static const Color requested = Color(0xFF5CBDBD);
   static const Color accepted = Color(0xFF10B981);
   static const Color rejected = Color(0xFFEF4444);
-  static const Color paid = Color(0xFF3B82F6);
+  static const Color paid = Color(0xFF45A5A5);
   static const Color completed = Color(0xFF059669);
   
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+    colors: [Color(0xFF5CBDBD), Color(0xFF72D5D5)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
   static const LinearGradient heroGradient = LinearGradient(
-    colors: [Color(0xFFEC4899), Color(0xFF8B5CF6)],
+    colors: [Color(0xFF45A5A5), Color(0xFF5CBDBD)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );

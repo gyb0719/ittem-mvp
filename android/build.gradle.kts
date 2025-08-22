@@ -5,6 +5,14 @@ allprojects {
     }
 }
 
+// Java 호환성 설정 - Android Gradle Plugin과 호환 가능한 방식
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        sourceCompatibility = JavaVersion.VERSION_11.toString()
+        targetCompatibility = JavaVersion.VERSION_11.toString()
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

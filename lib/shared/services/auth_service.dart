@@ -34,6 +34,34 @@ class AuthService {
     }
   }
 
+  Future<AuthResult> completeSignUp({
+    required String name,
+    String? email,
+    String? phone,
+    String? bio,
+  }) async {
+    try {
+      // 실제로는 백엔드 API 호출
+      await Future.delayed(const Duration(seconds: 1));
+      
+      _currentUser = UserModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        email: email ?? '$phone@ittem.com',
+        name: name,
+        bio: bio,
+        location: '잠실동',
+        rating: 5.0,
+        transactionCount: 0,
+        isVerified: true,
+        createdAt: DateTime.now(),
+        lastLoginAt: DateTime.now(),
+      );
+      return AuthResult.success(_currentUser!);
+    } catch (e) {
+      return AuthResult.failure('회원가입 중 오류가 발생했습니다: $e');
+    }
+  }
+
   Future<AuthResult> signUp({
     required String email,
     required String password,
@@ -131,8 +159,8 @@ class AuthService {
       await Future.delayed(const Duration(seconds: 1));
       
       _currentUser = _currentUser!.copyWith(
-        name: name,
-        location: location,
+        name: name ?? _currentUser!.name,
+        location: location ?? _currentUser!.location,
         phoneNumber: phoneNumber,
         profileImageUrl: profileImageUrl,
       );
@@ -165,7 +193,22 @@ final authStateProvider = StateNotifierProvider<AuthStateNotifier, AuthState>((r
 class AuthStateNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
 
-  AuthStateNotifier(this._authService) : super(AuthState.initial());
+  AuthStateNotifier(this._authService) : super(
+    AuthState.authenticated(
+      UserModel(
+        id: 'default-user',
+        name: '김사용자',
+        email: 'user@example.com',
+        phoneNumber: '010-1234-5678',
+        location: '잠실동',
+        rating: 4.8,
+        transactionCount: 12,
+        isVerified: true,
+        createdAt: DateTime.now().subtract(const Duration(days: 30)),
+        lastLoginAt: DateTime.now(),
+      ),
+    ),
+  );
 
   Future<void> signIn(String email, String password) async {
     state = AuthState.loading();

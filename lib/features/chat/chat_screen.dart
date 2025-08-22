@@ -10,7 +10,8 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
-  final List<Map<String, dynamic>> _chatList = [
+  final TextEditingController _searchController = TextEditingController();
+  final List<Map<String, dynamic>> _allChatList = [
     {
       'id': '1',
       'name': '김철수',
@@ -56,6 +57,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       'isOnline': false,
     },
   ];
+  
+  List<Map<String, dynamic>> _filteredChatList = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _filteredChatList = List.from(_allChatList);
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +79,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
           '채팅',
           style: TextStyle(
@@ -75,15 +94,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search, color: AppColors.textPrimary),
-            onPressed: () {},
+            onPressed: () {
+              _showSearchDialog();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
-            onPressed: () {},
+            onPressed: () {
+              _showMoreOptions();
+            },
           ),
         ],
       ),
-      body: _chatList.isEmpty
+      body: _filteredChatList.isEmpty
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -118,10 +141,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               },
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
-                itemCount: _chatList.length,
+                itemCount: _filteredChatList.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  final chat = _chatList[index];
+                  final chat = _filteredChatList[index];
                   return _buildChatItem(chat);
                 },
               ),
@@ -132,6 +155,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget _buildChatItem(Map<String, dynamic> chat) {
     return GestureDetector(
       onTap: () {
+        // 읽음 상태로 변경
+        setState(() {
+          chat['unreadCount'] = 0;
+        });
+        
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -167,13 +195,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               children: [
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: Colors.grey.withValues(alpha: 0.1),
                   child: Text(
                     chat['name'].toString().substring(0, 1),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: Colors.black87,
                     ),
                   ),
                 ),
@@ -217,7 +245,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -225,7 +253,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.primary,
+                            color: Colors.black87,
                           ),
                         ),
                       ),
@@ -300,7 +328,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: const BoxDecoration(
-                      color: AppColors.primary,
+                      color: Colors.black87,
                       shape: BoxShape.circle,
                     ),
                     child: Text(
@@ -383,13 +411,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: Colors.grey.withValues(alpha: 0.1),
                   child: Text(
                     widget.userName.substring(0, 1),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: Colors.black87,
                     ),
                   ),
                 ),
@@ -428,7 +456,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -436,7 +464,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.primary,
+                            color: Colors.black87,
                           ),
                         ),
                       ),
@@ -532,7 +560,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
@@ -540,7 +568,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.primary,
+                      color: Colors.black87,
                     ),
                   ),
                 ),
@@ -593,7 +621,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 const SizedBox(width: 8),
                 Container(
                   decoration: const BoxDecoration(
-                    color: AppColors.primary,
+                    color: Colors.black87,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
@@ -618,13 +646,13 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           if (!message['isMe']) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              backgroundColor: Colors.grey.withValues(alpha: 0.1),
               child: Text(
                 widget.userName.substring(0, 1),
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  color: Colors.black87,
                 ),
               ),
             ),
@@ -634,7 +662,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: message['isMe'] ? AppColors.primary : Colors.white,
+                color: message['isMe'] ? Colors.black87 : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -707,5 +735,179 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+}
+
+extension on _ChatScreenState {
+  void _showSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('채팅 검색'),
+        content: TextField(
+          controller: _searchController,
+          decoration: const InputDecoration(
+            hintText: '이름, 아이템 제목, 메시지를 검색하세요',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _searchController.clear();
+              Navigator.pop(context);
+            },
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _performSearch();
+              Navigator.pop(context);
+            },
+            child: const Text('검색'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _performSearch() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredChatList = List.from(_allChatList);
+      } else {
+        _filteredChatList = _allChatList.where((chat) {
+          // 한글 지원을 위해 대소문자 변환 없이 검색
+          final nameMatch = chat['name'].toString().contains(query) ||
+                           chat['name'].toString().toLowerCase().contains(query);
+          final itemMatch = chat['itemTitle'].toString().contains(query) ||
+                           chat['itemTitle'].toString().toLowerCase().contains(query);
+          final messageMatch = chat['lastMessage'].toString().contains(query) ||
+                              chat['lastMessage'].toString().toLowerCase().contains(query);
+          final neighborhoodMatch = chat['neighborhood'].toString().contains(query) ||
+                                   chat['neighborhood'].toString().toLowerCase().contains(query);
+          
+          return nameMatch || itemMatch || messageMatch || neighborhoodMatch;
+        }).toList();
+      }
+    });
+  }
+  
+  void _showMoreOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text('새로고침'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _filteredChatList = List.from(_allChatList);
+                  _searchController.clear();
+                });
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.filter_list),
+              title: const Text('필터'),
+              onTap: () {
+                Navigator.pop(context);
+                _showFilterOptions();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.mark_chat_read),
+              title: const Text('모두 읽음 처리'),
+              onTap: () {
+                Navigator.pop(context);
+                _markAllAsRead();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('채팅 설정'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('채팅 설정 기능을 구현 예정입니다')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _showFilterOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('정렬 순서', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ListTile(
+              title: const Text('최신 메시지순'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _filteredChatList.sort((a, b) => a['timeAgo'].compareTo(b['timeAgo']));
+                });
+              },
+            ),
+            ListTile(
+              title: const Text('읽지 않은 메시지'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _filteredChatList = _allChatList.where((chat) => chat['unreadCount'] > 0).toList();
+                });
+              },
+            ),
+            ListTile(
+              title: const Text('온라인 사용자'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _filteredChatList = _allChatList.where((chat) => chat['isOnline'] == true).toList();
+                });
+              },
+            ),
+            ListTile(
+              title: const Text('전체 보기'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _filteredChatList = List.from(_allChatList);
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _markAllAsRead() {
+    setState(() {
+      for (var chat in _allChatList) {
+        chat['unreadCount'] = 0;
+      }
+      _filteredChatList = List.from(_allChatList);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('모든 메시지를 읽음 처리했습니다')),
+    );
   }
 }
